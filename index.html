@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>시험지 쌔비기 : "들키면 F, 찾으면 A."</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; }
+    html { scroll-behavior: smooth; }
+    body { background-color: #03060c; color: #cbd5e1; overflow-x: hidden; }
+
+    /* 심야 캠퍼스 비네트 및 형광등 미세 깜빡임 효과 */
+    .horror-vignette {
+      background: radial-gradient(circle at 50% 45%, transparent 42%, rgba(2, 4, 10, 0.88) 100%);
+      pointer-events: none;
+    }
+    @keyframes fluorescentFlicker {
+      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 0.92; }
+      20%, 24%, 55% { opacity: 0.35; }
+    }
+    .flicker-light {
+      animation: fluorescentFlicker 6s infinite;
+    }
+
+    /* 기획서 와이어프레임 스타일 복도 장소 핀 (다크 글래스 태그 + 시안 도트 + 연결선) */
+    .wf-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      z-index: 18;
+      cursor: pointer;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    .wf-pin:hover {
+      transform: translate(-50%, -53%) scale(1.05);
+      filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.55));
+    }
+    .wf-pin-box {
+      background: rgba(5, 11, 20, 0.92);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.85), inset 0 0 10px rgba(56, 189, 248, 0.08);
+    }
+    .wf-pin:hover .wf-pin-box {
+      border-color: rgba(125, 211, 252, 0.95);
+      background: rgba(10, 22, 38, 0.98);
+    }
+    .wf-pin-office .wf-pin-box {
+      border-color: rgba(239, 68, 68, 0.75);
+      box-shadow: 0 4px 20px rgba(127, 29, 29, 0.55);
+    }
+
+    /* 방 내부 사물 직접 클릭 영역 (아이콘 없음, 호버 시 은은한 시안/형광 테두리) */
+    .room-hotspot {
+      cursor: pointer;
+      transition: filter 0.22s ease;
+    }
+    .room-hotspot:hover {
+      filter: drop-shadow(0 0 9px rgba(56, 189, 248, 0.75)) brightness(1.18);
+    }
+
+    /* 계단 이동 암전 페이드 (650ms) */
+    #stair-fade-overlay {
+      transition: opacity 0.65s ease-in-out;
+    }
+
+    /* 45초 타임어택 붉은 경고 맥동 */
+    @keyframes dangerPulse {
+      0%, 100% { box-shadow: inset 0 0 28px rgba(220, 38, 38, 0.3); }
+      50% { box-shadow: inset 0 0 68px rgba(220, 38, 38, 0.85); }
+    }
+    .timer-danger {
+      animation: dangerPulse 0.85s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-sky-500 selection:text-slate-950">
+
+  <!-- 미니멀 상단 네비게이션 -->
+  <header class="sticky top-0 z-40 bg-[#03060c]/90 backdrop-blur-md border-b border-slate-800/80">
+    <div class="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2.5 group">
+        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+        <span class="text-base sm:text-lg font-black tracking-tight text-slate-100 group-hover:text-sky-400 transition">시험지 쌔비기</span>
+      </a>
+      <nav class="flex items-center gap-5 sm:gap-7 text-xs sm:text-sm font-bold text-slate-400">
+        <a href="#demo" class="text-sky-400 hover:text-sky-300 transition">게임 플레이</a>
+        <a href="#howto" class="hover:text-slate-200 transition">게임 설명</a>
+        <a href="#endings" class="hover:text-slate-200 transition">엔딩 도감</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 1. 첫 화면 히어로 섹션 (게임명 + 시놉시스 + 게임 플레이 / 게임 설명 버튼) -->
+  <section class="relative border-b border-slate-900 bg-gradient-to-b from-[#040812] via-[#060c18] to-[#03060c] py-14 sm:py-20 px-4 overflow-hidden">
+    <!-- 은은한 달빛 백그라운드 실루엣 -->
+    <div class="max-w-3xl mx-auto text-center relative z-10">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/90 border border-slate-700/80 text-sky-400 text-xs font-bold tracking-wider mb-5">
+        <span>대학교 잠입 추리 어드벤처 · 한성관 야간 잠입</span>
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-black text-white tracking-tight mb-3">
+        시험지 쌔비기
+      </h1>
+      <p class="text-lg sm:text-2xl font-bold text-red-400/95 tracking-wide mb-7">
+        “들키면 F, 찾으면 A.”
+      </p>
+
+      <!-- 시놉시스 박스 -->
+      <div class="rounded-2xl bg-[#070d19]/90 border border-slate-800/90 p-5 sm:p-6 mb-8 shadow-2xl text-left sm:text-center">
+        <p class="text-xs sm:text-base text-slate-300 leading-relaxed">
+          시험을 이틀 앞둔 어느 날 밤, 플레이어는 소등된 대학교 한성관에 몰래 잠입한다.<br class="hidden sm:inline" />
+          1~4층을 돌아다니며 교수 연구실 잠금 단서를 찾고, 제한 시간 <span class="text-red-400 font-bold">45초</span> 내에 시험지를 훔쳐 탈출해야 한다.
+        </p>
+      </div>
+
+      <!-- 두 개의 메인 버튼 -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3.5 max-w-md mx-auto">
+        <a href="#demo" id="hero-play-btn" class="w-full sm:w-1/2 py-3.5 px-6 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-sm sm:text-base shadow-lg shadow-sky-500/20 transition text-center">
+          게임 플레이
+        </a>
+        <a href="#howto" class="w-full sm:w-1/2 py-3.5 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-sm sm:text-base transition text-center">
+          게임 설명
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 간결한 게임 설명 (#howto) -->
+  <section id="howto" class="max-w-5xl mx-auto w-full px-4 pt-10 pb-4">
+    <div class="rounded-2xl bg-[#070d19] border border-slate-800/90 p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="space-y-1.5 text-xs sm:text-sm text-slate-300 leading-relaxed">
+        <p class="font-bold text-sky-400">HOW TO PLAY · POINT &amp; CLICK STEALTH</p>
+        <p>• 모든 이동과 사물 조사, 대화 선택은 오직 <span class="text-white font-bold">마우스 클릭(터치)</span>만으로 진행됩니다.</p>
+        <p>• 별도의 단서 수첩이 제공되지 않으므로 각 층에서 발견한 <span class="text-white font-bold">4자리 비밀번호 단서를 직접 기억</span>해 연구실 잠금을 해제하세요.</p>
+      </div>
+      <span class="px-3 py-1.5 rounded-lg bg-red-950/60 border border-red-800/60 text-red-300 text-xs font-bold shrink-0">
+        발각 및 오답 시 즉시 F
+      </span>
+    </div>
+  </section>
+
+  <!-- 3. 웹 데모 플레이 (#demo) -->
+  <section id="demo" class="max-w-5xl mx-auto w-full px-4 py-6">
+    <div class="rounded-2xl bg-[#050912] border border-slate-800 shadow-2xl overflow-hidden">
+
+      <!-- 상단 HUD (와이어프레임 좌측 상단 위치 표시 + 우측 최소 컨트롤) -->
+      <div class="bg-[#03060c] border-b border-slate-800/90 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5">
+          <span class="px-2.5 py-1 rounded bg-slate-900 border border-sky-500/40 text-sky-400 text-xs sm:text-sm font-bold flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+            <span id="hud-location">한성관 정문 앞</span>
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 연구실 진입 후 45초 제한시간 HUD -->
+          <div id="hud-timer-box" class="hidden items-center gap-1.5 px-3 py-1 rounded bg-red-950/90 border border-red-500/80 text-red-200 text-xs sm:text-sm font-black">
+            <span>제한시간</span>
+            <span id="hud-timer-text" class="text-red-400 tabular-nums">00:45</span>
+          </div>
+
+          <!-- 방 내부일 때만 복도로 나가는 버튼 제공 -->
+          <button id="btn-exit-room" type="button" class="hidden px-3 py-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 transition">
+            복도로 나가기
+          </button>
+
+          <button id="btn-sound-toggle" type="button" class="px-3 py-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-400 hover:text-slate-200 transition">
+            SFX ON
+          </button>
+          <button id="btn-restart-top" type="button" class="px-3 py-1.5 rounded bg-slate-900 hover:bg-red-950/80 border border-slate-800 text-xs font-bold text-slate-400 hover:text-red-300 transition">
+            초기화
+          </button>
+        </div>
+      </div>
+
+      <!-- 메인 게임 뷰포트 (16:9 반응형 스테이지) -->
+      <div id="game-stage" class="relative w-full aspect-[16/10] sm:aspect-[16/9] bg-[#020408] overflow-hidden select-none">
+
+        <!-- 계단 층간 이동 암전 페이드 (650ms) -->
+        <div id="stair-fade-overlay" class="pointer-events-none fixed inset-0 bg-black opacity-0 z-50"></div>
+
+        <!-- [화면 1] 기획서 MVP 와이어프레임 (1/5) 스타일 타이틀 시작 화면 -->
+        <div id="screen-title" class="absolute inset-0 z-30 flex flex-col justify-between p-6 sm:p-10 bg-gradient-to-b from-[#040812] via-[#060d1b] to-[#020408]">
+          <!-- 상단 밤하늘 달 & 한성관 실루엣 SVG -->
+          <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="absolute inset-0 w-full h-full opacity-55 pointer-events-none">
+            <circle cx="810" cy="95" r="36" fill="#cbd5e1" opacity="0.85"/>
+            <circle cx="822" cy="88" r="32" fill="#050a15"/>
+            <!-- 한성관 건물 실루엣 -->
+            <rect x="280" y="250" width="660" height="312" fill="#070d19" stroke="#1e293b" stroke-width="2"/>
+            <rect x="315" y="280" width="42" height="28" fill="#1e293b"/>
+            <rect x="375" y="280" width="42" height="28" fill="#fef08a" opacity="0.25"/>
+            <rect x="435" y="280" width="42" height="28" fill="#1e293b"/>
+            <rect x="495" y="280" width="42" height="28" fill="#1e293b"/>
+            <rect x="555" y="280" width="42" height="28" fill="#38bdf8" opacity="0.2"/>
+            <rect x="615" y="280" width="42" height="28" fill="#1e293b"/>
+            <rect x="315" y="330" width="42" height="28" fill="#1e293b"/>
+            <rect x="375" y="330" width="42" height="28" fill="#1e293b"/>
+            <rect x="435" y="330" width="42" height="28" fill="#fef08a" opacity="0.18"/>
+            <rect x="495" y="330" width="42" height="28" fill="#1e293b"/>
+          </svg>
+
+          <div class="relative z-10 text-center mt-4 sm:mt-8">
+            <h3 class="text-3xl sm:text-5xl font-black text-white tracking-wider drop-shadow-lg mb-2">
+              시험지 쌔비기
+            </h3>
+            <p class="text-sm sm:text-xl font-bold text-slate-300">
+              “들키면 F, 찾으면 A.”
+            </p>
+          </div>
+
+          <div class="relative z-10 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+            <div class="flex flex-col gap-2.5 w-48 sm:w-56">
+              <button id="btn-start-game" type="button" class="w-full py-3 px-5 rounded bg-slate-950/90 hover:bg-sky-500/20 border border-slate-600 hover:border-sky-400 text-left text-white font-black text-sm sm:text-base transition shadow-lg">
+                게임 시작
+              </button>
+              <button id="btn-open-rules" type="button" class="w-full py-2.5 px-5 rounded bg-slate-950/80 hover:bg-slate-900 border border-slate-800 text-left text-slate-300 font-bold text-xs sm:text-sm transition">
+                조작 및 규칙 안내
+              </button>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-400 font-medium">
+              한성관에 잠입한다.
+            </p>
+          </div>
+        </div>
+
+        <!-- 조작 및 규칙 안내 모달 (스포일러 없음) -->
+        <div id="modal-rules" class="hidden absolute inset-0 z-40 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-[#070d19] border border-slate-700 rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <h4 class="text-base sm:text-lg font-black text-sky-400 mb-3">조작 및 규칙 안내</h4>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5">
+              이 게임은 마우스 클릭(또는 화면 터치)만으로 진행됩니다.<br/>
+              복도에서 문과 계단 핀을 클릭해 이동하고, 방 안에서는 의심스러운 사물을 직접 클릭해 조사하세요.
+            </p>
+            <button id="btn-close-rules" type="button" class="w-full py-2.5 rounded bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs sm:text-sm transition">
+              확인
+            </button>
+          </div>
+        </div>
+
+        <!-- [화면 2] 씬 SVG 배경 레이어 (1점 투시 복도 / 방 내부 / 사물 확대) -->
+        <div id="scene-canvas" class="w-full h-full relative"></div>
+
+        <!-- 어두운 공포감 비네트 오버레이 -->
+        <div class="horror-vignette absolute inset-0 z-10"></div>
+
+        <!-- [화면 3] 와이어프레임 복도 핀 레이어 (다크 글래스 태그 + 시안 도트) -->
+        <div id="corridor-pins-layer" class="hidden absolute inset-0 pointer-events-none z-20"></div>
+
+        <!-- [화면 4] 사물 확대 조사 전용 '← 뒤로 가기' 버튼 -->
+        <button id="btn-zoom-back" type="button" class="hidden absolute top-3 left-3 z-30 px-3.5 py-2 rounded bg-[#050b14]/95 hover:bg-slate-900 border border-sky-500/60 text-sky-300 font-black text-xs sm:text-sm shadow-xl transition">
+          ← 뒤로 가기
+        </button>
+
+        <!-- [화면 5] 기획서 와이어프레임 (3/5) 스타일 도어락 키패드 모달 -->
+        <div id="modal-doorlock" class="hidden absolute inset-0 z-30 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-[#060b14] border border-slate-700 rounded-xl p-5 w-full max-w-sm shadow-2xl flex flex-col sm:flex-row items-center gap-4">
+            <div class="w-full">
+              <div class="bg-black border border-slate-700 rounded py-2.5 px-3 mb-3 text-center">
+                <div id="doorlock-display" class="text-xl sm:text-2xl font-black tracking-[0.45em] text-slate-100 font-mono">
+                  * * * *
+                </div>
+                <div id="doorlock-msg" class="text-[11px] text-slate-400 mt-1 h-4">
+                  비밀번호 4자리 입력
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-1.5">
+                <button type="button" class="keypad-btn py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm" data-key="1">1</button>
+                <button type="button" class="keypad-btn py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm" data-key="2">2</button>
+                <button type="button" class="keypad-btn py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm" data-key="3">3</button>
+                <button type="button" class="keypad-btn py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm" data-key="4">4</button>
+                <button type="button" class="keypad-btn py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm" data-key="5">5</button>
+                <button type="button" class="keypad-btn py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm" data-key="6">6</button>
+                <button type="button" class="keypad-btn py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm" data-key="7">7</button>
+                <button type="button" class="keypad-btn py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm" data-key="8">8</button>
+                <button type="button" class="keypad-btn py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm" data-key="9">9</button>
+                <button type="button" id="keypad-clear" class="py-2.5 rounded bg-slate-900 hover:bg-red-950 border border-slate-700 text-slate-300 font-bold text-xs">←</button>
+                <button type="button" class="keypad-btn py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold text-sm" data-key="0">0</button>
+                <button type="button" id="keypad-enter" class="py-2.5 rounded bg-slate-900 hover:bg-sky-900 border border-sky-500/60 text-sky-400 font-black text-xs">✓</button>
+              </div>
+            </div>
+
+            <div class="w-full sm:w-36 flex flex-col justify-between gap-3">
+              <div class="bg-slate-950 border border-slate-800 rounded p-3 text-center">
+                <div class="text-[11px] text-slate-400 mb-1">입력 가능 횟수</div>
+                <div id="doorlock-attempts" class="text-lg font-black text-slate-100">5 / 5</div>
+              </div>
+              <button type="button" id="btn-close-doorlock" class="w-full py-2 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 text-xs font-bold">
+                물러나기
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- [화면 6] 기획서 와이어프레임 하단 다크 프레임 텍스트 박스 & 우측 선택지 -->
+        <div id="dialogue-box" class="hidden absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-5 sm:right-5 z-30 flex flex-col sm:flex-row items-stretch gap-2.5">
+          <div id="dialogue-main-panel" class="flex-1 bg-[#03070e]/95 border border-slate-700/90 rounded-lg p-3.5 sm:p-4 shadow-2xl cursor-pointer">
+            <div class="flex items-center justify-between mb-1">
+              <span id="dialogue-speaker" class="text-xs font-black text-sky-400">시스템</span>
+              <span id="dialogue-hint" class="text-[11px] text-slate-400 hidden">▼</span>
+            </div>
+            <p id="dialogue-text" class="text-xs sm:text-sm text-slate-100 leading-relaxed whitespace-pre-line"></p>
+          </div>
+          <!-- 대화 선택지 (우측 배치 와이어프레임 스타일) -->
+          <div id="dialogue-choices" class="hidden sm:w-72 flex flex-col justify-center gap-1.5 bg-[#03070e]/95 border border-slate-700/90 rounded-lg p-2.5 shadow-2xl"></div>
+        </div>
+
+        <!-- [화면 7] 기획서 와이어프레임 (5/5) 결과 화면 (등급: A / 등급: F) -->
+        <div id="screen-ending" class="hidden absolute inset-0 z-40 bg-[#020408]/95 flex flex-col sm:flex-row items-center justify-between p-6 sm:p-12">
+          <div id="ending-portrait" class="w-40 h-40 sm:w-64 sm:h-64 shrink-0 mb-4 sm:mb-0"></div>
+          <div class="flex-1 text-center sm:text-right">
+            <div id="ending-grade-text" class="text-3xl sm:text-5xl font-black mb-2 tracking-tight text-red-500">
+              등급 : F
+            </div>
+            <p id="ending-quote" class="text-sm sm:text-lg font-bold text-red-300 mb-3">
+              “연구실로 따라오도록.”
+            </p>
+            <p id="ending-desc" class="text-xs sm:text-sm text-slate-400 max-w-md ml-auto leading-relaxed mb-6">
+              엔딩 설명
+            </p>
+            <button id="btn-ending-retry" type="button" class="px-7 py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-600 text-slate-100 font-bold text-xs sm:text-sm transition">
+              다시 시도
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 멀티 엔딩 도감 (#endings) -->
+  <section id="endings" class="max-w-5xl mx-auto w-full px-4 pt-6 pb-16">
+    <div class="rounded-2xl bg-[#070d19] border border-slate-800/90 p-6 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-5">
+        <div>
+          <h2 class="text-lg sm:text-xl font-black text-white">엔딩 도감</h2>
+          <p class="text-xs text-slate-400 mt-0.5">달성한 A등급 및 F등급 결말이 자동 기록됩니다.</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="ending-progress-text" class="text-xs font-bold text-sky-400 bg-slate-900 border border-slate-700 px-3 py-1 rounded">
+            0 / 6 달성
+          </span>
+          <button id="btn-reset-endings" type="button" class="text-xs text-slate-500 hover:text-red-400 underline">
+            초기화
+          </button>
+        </div>
+      </div>
+      <div id="endings-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+    </div>
+  </section>
+
+  <footer class="border-t border-slate-900 py-6 text-center text-xs text-slate-600">
+    〈시험지 쌔비기 : "들키면 F, 찾으면 A."〉 · 기획자: 김우진
+  </footer>
+
+  <script>
+    /*************************************************************************
+     * 1. Web Audio API 호러/잠입 효과음 엔진
+     *************************************************************************/
+    const SoundFX = (() => {
+      let ctx = null;
+      let enabled = true;
+
+      function ensureCtx() {
+        if (!enabled) return null;
+        if (!ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) ctx = new AudioCtx();
+        }
+        if (ctx && ctx.state === 'suspended') ctx.resume();
+        return ctx;
+      }
+
+      function tone(freq, type = 'sine', dur = 0.12, vol = 0.1, delay = 0) {
+        const c = ensureCtx();
+        if (!c) return;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, c.currentTime + delay);
+        gain.gain.setValueAtTime(vol, c.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + delay + dur);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start(c.currentTime + delay);
+        osc.stop(c.currentTime + delay + dur);
+      }
+
+      return {
+        toggle() { enabled = !enabled; return enabled; },
+        click() { tone(440, 'triangle', 0.06, 0.08); },
+        door() {
+          tone(110, 'sawtooth', 0.16, 0.11, 0);
+          tone(85, 'sine', 0.2, 0.12, 0.1);
+        },
+        footsteps() {
+          tone(95, 'sine', 0.12, 0.14, 0.05);
+          tone(88, 'sine', 0.12, 0.14, 0.35);
+          tone(92, 'sine', 0.14, 0.14, 0.65);
+        },
+        beep(ok = true) {
+          if (ok) {
+            tone(880, 'sine', 0.1, 0.12, 0);
+            tone(1174, 'sine', 0.2, 0.14, 0.1);
+          } else {
+            tone(150, 'sawtooth', 0.28, 0.16, 0);
+          }
+        },
+        horrorShock() {
+          tone(75, 'sawtooth', 0.45, 0.2, 0);
+          tone(112, 'square', 0.35, 0.14, 0.05);
+        },
+        success() {
+          tone(523.25, 'triangle', 0.15, 0.12, 0);
+          tone(659.25, 'triangle', 0.15, 0.12, 0.12);
+          tone(783.99, 'triangle', 0.28, 0.14, 0.24);
+        }
+      };
+    })();
+
+    /*************************************************************************
+     * 2. 멀티 엔딩 데이터 (기획서 MVP 5/5 대사 반영)
+     *************************************************************************/
+    const ENDINGS_META = [
+      {
+        id: 'A_CLEAR',
+        grade: 'A',
+        title: '시험지 탈취 성공',
+        quote: '“쟤가 그럴리가 없는데...”',
+        desc: '제한시간 내 교수 연구실 책상 서랍에서 시험지를 수집하고 무사히 탈출했습니다.'
+      },
+      {
+        id: 'F_SENIOR',
+        grade: 'F',
+        title: '과방 선배에게 발각',
+        quote: '“이 시간에 너 딱 걸렸어.”',
+        desc: '3층 과방 선배의 의심을 피하지 못해 현장에서 붙잡혔습니다.'
+      },
+      {
+        id: 'F_PROFESSOR',
+        grade: 'F',
+        title: '교수님과 정면 조우',
+        quote: '“쥐새끼가 기어들어왔군... 연구실로 따라오도록.”',
+        desc: '4층 복도에서 퇴근하던 교수님에게 수상한 행적을 들켜 F학점이 확정되었습니다.'
+      },
+      {
+        id: 'F_DOORLOCK',
+        grade: 'F',
+        title: '보안 시스템 작동',
+        quote: '“학생, 미친거야?”',
+        desc: '비밀번호 입력 횟수 5회를 초과해 경보가 울렸고, 순찰 중이던 경비원에게 체포되었습니다.'
+      },
+      {
+        id: 'F_WRONG_PAPER',
+        grade: 'F',
+        title: '작년 시험지 수집',
+        quote: '“자네, 그 시험지는 작년꺼라네.... 허허”',
+        desc: '서류 더미에 있던 작년 기출 시험지를 잘못 챙겨 나와 시험을 망쳤습니다.'
+      },
+      {
+        id: 'F_TIMEOUT',
+        grade: 'F',
+        title: '제한 시간 초과',
+        quote: '“연구실로 따라오도록.”',
+        desc: '휴대폰을 가지러 돌아온 교수님이 연구실 문을 열 때까지 시험지를 찾지 못했습니다.'
+      }
+    ];
+
+    const STORAGE_KEY = 'steal_exam_endings_v3';
+
+    function getUnlockedEndings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) { return []; }
+    }
+
+    function unlockEnding(id) {
+      const list = getUnlockedEndings();
+      if (!list.includes(id)) {
+        list.push(id);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+      }
+      renderEndingsGallery();
+    }
+
+    function renderEndingsGallery() {
+      const unlocked = getUnlockedEndings();
+      document.getElementById('ending-progress-text').textContent = `${unlocked.length} / ${ENDINGS_META.length} 달성`;
+      const grid = document.getElementById('endings-grid');
+
+      grid.innerHTML = ENDINGS_META.map(e => {
+        const open = unlocked.includes(e.id);
+        const isA = e.grade === 'A';
+        if (!open) {
+          return `
+            <div class="rounded-xl bg-[#040811] border border-slate-800/80 p-4 opacity-70">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-black text-slate-500">등급 : ?</span>
+                <span class="text-[11px] text-slate-600">미달성</span>
+              </div>
+              <div class="text-sm font-bold text-slate-400">잠긴 결말</div>
+            </div>
+          `;
+        }
+        return `
+          <div class="rounded-xl ${isA ? 'bg-sky-950/25 border-sky-500/40' : 'bg-red-950/20 border-red-800/40'} border p-4">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-black ${isA ? 'text-sky-400' : 'text-red-400'}">등급 : ${e.grade}</span>
+              <span class="text-[11px] text-slate-400">달성</span>
+            </div>
+            <div class="text-sm font-black text-white mb-1">${e.title}</div>
+            <p class="text-xs text-slate-400 leading-relaxed">${e.desc}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /*************************************************************************
+     * 3. 층별 복도 & 장소 데이터 (기획서 PDF Page 3 & Page 8 전 층 강의실 복원)
+     *************************************************************************/
+    const state = {
+      started: false,
+      floor: 1,
+      view: 'corridor', // 'corridor' | 'room' | 'zoom'
+      roomId: null,
+      zoomObjectId: null,
+      metSenior: false,
+      metProf4F: false,
+      doorlockUnlocked: false,
+      doorlockInput: '',
+      doorlockTriesLeft: 5,
+      timerRunning: false,
+      timeLeft: 45,
+      timerInterval: null,
+      dialogueCallback: null
+    };
+
+    // PDF Page 8 '2층 복도' 원근 투시 구조에 맞춘 좌·우 벽면 문 핀 및 계단 핀 좌표(%)
+    const CORRIDOR_DATA = {
+      1: {
+        hud: '1층 복도',
+        pins: [
+          { id: '1F_CLASS', label: '101호 강의실', type: 'room', x: 24, y: 42 },
+          { id: '1F_LOUNGE', label: '휴게실', type: 'room', x: 35, y: 52 },
+          { id: '1F_TOILET', label: '화장실', type: 'room', x: 76, y: 42 },
+          { id: 'UP_2', label: '계단 (2층으로 ▲)', type: 'stair', targetFloor: 2, x: 50, y: 39 }
+        ]
+      },
+      2: {
+        hud: '2층 복도',
+        pins: [
+          { id: '2F_CLUB', label: '학회실', type: 'room', x: 14, y: 42 },
+          { id: '2F_CLASS', label: '201호 강의실', type: 'room', x: 31, y: 43 },
+          { id: '2F_TOILET', label: '화장실', type: 'room', x: 75, y: 42 },
+          { id: 'UP_3', label: '계단 (3층으로 ▲)', type: 'stair', targetFloor: 3, x: 55, y: 38 },
+          { id: 'DOWN_1', label: '계단 (1층으로 ▼)', type: 'stair', targetFloor: 1, x: 45, y: 46 }
+        ]
+      },
+      3: {
+        hud: '3층 복도',
+        pins: [
+          { id: '3F_DEPT', label: '과방', type: 'room', x: 16, y: 42 },
+          { id: '3F_CLASS', label: '301호 강의실', type: 'room', x: 32, y: 44 },
+          { id: '3F_TOILET', label: '화장실', type: 'room', x: 75, y: 42 },
+          { id: 'UP_4', label: '계단 (4층으로 ▲)', type: 'stair', targetFloor: 4, x: 55, y: 38 },
+          { id: 'DOWN_2', label: '계단 (2층으로 ▼)', type: 'stair', targetFloor: 2, x: 45, y: 46 }
+        ]
+      },
+      4: {
+        hud: '4층 복도',
+        pins: [
+          { id: '4F_OFFICE', label: '교수 연구실', type: 'room', x: 25, y: 42 },
+          { id: '4F_TOILET', label: '화장실', type: 'room', x: 75, y: 42 },
+          { id: 'DOWN_3', label: '계단 (3층으로 ▼)', type: 'stair', targetFloor: 3, x: 50, y: 42 }
+        ]
+      }
+    };
+
+    const ROOM_HUD_NAMES = {
+      '1F_CLASS': '1층 - 101호 강의실',
+      '1F_LOUNGE': '1층 - 휴게실',
+      '1F_TOILET': '1층 - 화장실',
+      '2F_CLASS': '2층 - 201호 강의실',
+      '2F_CLUB': '2층 - 학회실',
+      '2F_TOILET': '2층 - 화장실',
+      '3F_CLASS': '3층 - 301호 강의실',
+      '3F_DEPT': '3층 - 과방',
+      '3F_TOILET': '3층 - 화장실',
+      '4F_OFFICE': '4층 - 교수 연구실',
+      '4F_TOILET': '4층 - 화장실'
+    };
+
+    /*************************************************************************
+     * 4. 1점 투시 야간 복도 & 방 내부 & 사물 확대 SVG 렌더러
+     *************************************************************************/
+    function renderCorridorSVG(floor) {
+      // PDF Page 8 '2층 복도' 이미지와 동일한 1점 소실점 어두운 복도 + 젖은 타일 반사광 + 천장 형광등
+      return `
+        <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+          <defs>
+            <linearGradient id="corridorWallL" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#050a14"/>
+              <stop offset="100%" stop-color="#020409"/>
+            </linearGradient>
+            <linearGradient id="corridorWallR" x1="1" y1="0" x2="0" y2="0">
+              <stop offset="0%" stop-color="#050a14"/>
+              <stop offset="100%" stop-color="#020409"/>
+            </linearGradient>
+            <linearGradient id="wetFloor" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#030711"/>
+              <stop offset="45%" stop-color="#0a1628"/>
+              <stop offset="100%" stop-color="#040914"/>
+            </linearGradient>
+            <radialGradient id="endGlow" cx="50%" cy="44%" r="28%">
+              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#020408" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+
+          <!-- 기본 심야 어둠 배경 -->
+          <rect width="1000" height="562" fill="#020409"/>
+
+          <!-- 좌측 벽면 (원근 투시) -->
+          <polygon points="0,0 415,175 415,345 0,520" fill="url(#corridorWallL)" stroke="#0f172a" stroke-width="2"/>
+          <!-- 우측 벽면 (원근 투시) -->
+          <polygon points="1000,0 585,175 585,345 1000,520" fill="url(#corridorWallR)" stroke="#0f172a" stroke-width="2"/>
+          <!-- 복도 끝 안쪽 벽면 -->
+          <rect x="415" y="175" width="170" height="170" fill="#030710" stroke="#0f172a" stroke-width="2"/>
+          <rect width="1000" height="562" fill="url(#endGlow)"/>
+
+          <!-- 젖은 타일 바닥 (원근 투시) -->
+          <polygon points="0,520 415,345 585,345 1000,520 1000,562 0,562" fill="url(#wetFloor)"/>
+          <!-- 바닥 원근 타일 라인 -->
+          <line x1="250" y1="562" x2="455" y2="345" stroke="#1e293b" stroke-width="1.5" opacity="0.55"/>
+          <line x1="500" y1="562" x2="500" y2="345" stroke="#1e293b" stroke-width="1.5" opacity="0.55"/>
+          <line x1="750" y1="562" x2="545" y2="345" stroke="#1e293b" stroke-width="1.5" opacity="0.55"/>
+          <line x1="120" y1="470" x2="880" y2="470" stroke="#1e293b" stroke-width="1.5" opacity="0.5"/>
+          <line x1="280" y1="402" x2="720" y2="402" stroke="#1e293b" stroke-width="1.2" opacity="0.45"/>
+
+          <!-- 좌측 벽면 문 실루엣 (앞문 & 뒷문) -->
+          <polygon points="65,130 195,165 195,438 65,492" fill="#040812" stroke="#1e293b" stroke-width="2"/>
+          <polygon points="245,178 325,198 325,382 245,416" fill="#040812" stroke="#1e293b" stroke-width="2"/>
+
+          <!-- 우측 벽면 문 실루엣 & 게시판 -->
+          <polygon points="805,165 935,130 935,492 805,438" fill="#040812" stroke="#1e293b" stroke-width="2"/>
+          <polygon points="675,198 755,178 755,416 675,382" fill="#040812" stroke="#1e293b" stroke-width="2"/>
+
+          <!-- 천장 형광등 (깜빡임 애니메이션 + 바닥 반사광) -->
+          <g class="flicker-light">
+            <rect x="425" y="42" width="150" height="9" rx="3" fill="#e0f2fe" opacity="0.85"/>
+            <rect x="455" y="112" width="90" height="6" rx="2" fill="#bae6fd" opacity="0.65"/>
+            <rect x="475" y="152" width="50" height="4" rx="2" fill="#7dd3fc" opacity="0.45"/>
+            <!-- 젖은 바닥 위 형광등 반사광 -->
+            <ellipse cx="500" cy="495" rx="75" ry="18" fill="#38bdf8" opacity="0.11"/>
+            <ellipse cx="500" cy="415" rx="42" ry="10" fill="#38bdf8" opacity="0.09"/>
+          </g>
+
+          <!-- 층 표기 워터마크 -->
+          <text x="500" y="232" text-anchor="middle" fill="#38bdf8" opacity="0.22" font-size="13" font-weight="bold" letter-spacing="3">${floor}F CORRIDOR</text>
+        </svg>
+      `;
+    }
+
+    function renderRoomSVG(roomId) {
+      // 모든 방 내부에는 아이콘/핀이 일절 없으며, 사물 자체에만 class="room-hotspot" 부여
+      switch (roomId) {
+        case '1F_CLASS':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="415" fill="#050911"/>
+              <rect y="415" width="1000" height="147" fill="#090d16"/>
+              <!-- 어두운 창문 -->
+              <rect x="65" y="95" width="145" height="205" rx="4" fill="#030712" stroke="#1e293b" stroke-width="4"/>
+              <line x1="137" y1="95" x2="137" y2="300" stroke="#1e293b" stroke-width="3"/>
+              <!-- 칠판 ('지각 : 이민호랑나비'만 표기, 하단 메모 없음) -->
+              <g class="room-hotspot" data-object="1F_CHALKBOARD">
+                <rect x="280" y="95" width="465" height="210" rx="6" fill="#0b1f18" stroke="#3f2312" stroke-width="8"/>
+                <text x="512" y="175" text-anchor="middle" fill="#cbd5e1" font-size="22" font-weight="bold" opacity="0.88">지각 : 이민호랑나비</text>
+              </g>
+              <!-- 교탁 -->
+              <g class="room-hotspot" data-object="1F_PODIUM">
+                <rect x="780" y="275" width="130" height="140" rx="4" fill="#27150c" stroke="#451a03" stroke-width="3"/>
+              </g>
+              <!-- 학생 책상 실루엣 -->
+              <rect x="170" y="405" width="190" height="14" fill="#1e1b18"/>
+              <rect x="450" y="405" width="190" height="14" fill="#1e1b18"/>
+            </svg>
+          `;
+
+        case '1F_LOUNGE':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="415" fill="#050810"/>
+              <rect y="415" width="1000" height="147" fill="#080c14"/>
+              <!-- 푸른 냉장 불빛이 새어 나오는 음료 자판기 -->
+              <g class="room-hotspot" data-object="1F_VENDING">
+                <rect x="185" y="110" width="205" height="305" rx="8" fill="#0f294a" stroke="#38bdf8" stroke-width="3"/>
+                <rect x="205" y="135" width="165" height="145" rx="4" fill="#071324" stroke="#7dd3fc" stroke-width="1.5"/>
+                <rect x="220" y="155" width="24" height="36" rx="3" fill="#b45309"/>
+                <rect x="255" y="155" width="24" height="36" rx="3" fill="#0284c7"/>
+                <rect x="290" y="155" width="24" height="36" rx="3" fill="#991b1b"/>
+                <rect x="325" y="155" width="24" height="36" rx="3" fill="#065f46"/>
+                <rect x="210" y="345" width="155" height="42" rx="4" fill="#020408" stroke="#334155" stroke-width="2"/>
+              </g>
+              <!-- 어두운 소파 -->
+              <g class="room-hotspot" data-object="1F_SOFA">
+                <rect x="520" y="295" width="315" height="120" rx="12" fill="#111827" stroke="#1f2937" stroke-width="3"/>
+              </g>
+            </svg>
+          `;
+
+        case '2F_CLASS':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="415" fill="#050911"/>
+              <rect y="415" width="1000" height="147" fill="#090d16"/>
+              <!-- 칠판 -->
+              <g class="room-hotspot" data-object="2F_CHALKBOARD">
+                <rect x="240" y="95" width="460" height="210" rx="6" fill="#0b1f18" stroke="#3f2312" stroke-width="8"/>
+                <text x="470" y="175" text-anchor="middle" fill="#94a3b8" font-size="20" font-weight="bold">201호 · 전공 중간고사 고사장 안내</text>
+              </g>
+              <!-- 우측 게시판 -->
+              <g class="room-hotspot" data-object="2F_BOARD">
+                <rect x="745" y="115" width="175" height="175" rx="4" fill="#1e1b18" stroke="#44403c" stroke-width="4"/>
+                <rect x="768" y="138" width="60" height="65" fill="#cbd5e1" opacity="0.75"/>
+                <rect x="842" y="155" width="55" height="55" fill="#fde047" opacity="0.7"/>
+              </g>
+            </svg>
+          `;
+
+        case '3F_CLASS':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="415" fill="#050911"/>
+              <rect y="415" width="1000" height="147" fill="#090d16"/>
+              <!-- 칠판 -->
+              <g class="room-hotspot" data-object="3F_CHALKBOARD">
+                <rect x="260" y="95" width="460" height="210" rx="6" fill="#0b1f18" stroke="#3f2312" stroke-width="8"/>
+                <text x="490" y="175" text-anchor="middle" fill="#94a3b8" font-size="20" font-weight="bold">301호 · 야간 자율학습 금지</text>
+              </g>
+              <!-- 앞줄 책상 위 낙서 -->
+              <g class="room-hotspot" data-object="3F_CLASS_DESK">
+                <rect x="360" y="340" width="260" height="75" rx="4" fill="#1c1917" stroke="#292524" stroke-width="3"/>
+              </g>
+            </svg>
+          `;
+
+        case '1F_TOILET':
+        case '2F_TOILET':
+        case '3F_TOILET':
+        case '4F_TOILET': {
+          const f = roomId[0];
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="420" fill="#050a12"/>
+              <rect y="420" width="1000" height="142" fill="#09111e"/>
+              <!-- 거울 & 세면대 -->
+              <g class="room-hotspot" data-object="${f}F_MIRROR">
+                <rect x="130" y="105" width="235" height="165" rx="6" fill="#0c1e33" stroke="#475569" stroke-width="5"/>
+                <line x1="160" y1="130" x2="215" y2="235" stroke="#38bdf8" stroke-width="4" opacity="0.18"/>
+                <rect x="115" y="295" width="265" height="28" rx="6" fill="#64748b"/>
+                <rect x="145" y="323" width="205" height="97" fill="#1e293b"/>
+              </g>
+              <!-- 화장실 칸 -->
+              <g class="room-hotspot" data-object="${f}F_STALL">
+                <rect x="525" y="95" width="325" height="325" rx="4" fill="#0f172a" stroke="#334155" stroke-width="4"/>
+                <rect x="548" y="115" width="279" height="290" rx="3" fill="#162033"/>
+                <rect x="795" y="255" width="12" height="32" rx="2" fill="#64748b"/>
+              </g>
+              ${f === '4' ? `
+                <!-- 4층 화장실 바닥에 떨어진 교수님 지갑 -->
+                <g class="room-hotspot" data-object="4F_WALLET">
+                  <rect x="425" y="452" width="64" height="34" rx="5" fill="#451a03" stroke="#f59e0b" stroke-width="2.5"/>
+                </g>
+              ` : ''}
+            </svg>
+          `;
+        }
+
+        case '2F_CLUB':
+          // PDF Page 8 '2층 - 학회실' 어두운 중앙 테이블 & 서류더미 반영
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="420" fill="#050912"/>
+              <rect y="420" width="1000" height="142" fill="#080c16"/>
+              <!-- 뒤쪽 화이트보드 -->
+              <rect x="275" y="105" width="310" height="165" rx="4" fill="#1e293b" stroke="#334155" stroke-width="5"/>
+              <line x1="305" y1="145" x2="540" y2="145" stroke="#475569" stroke-width="3"/>
+              <line x1="305" y1="180" x2="490" y2="180" stroke="#475569" stroke-width="3"/>
+              <!-- 우측 책장 -->
+              <rect x="690" y="95" width="210" height="325" fill="#090e1a" stroke="#1e293b" stroke-width="3"/>
+              <!-- 중앙 긴 회의 테이블과 서류더미 -->
+              <g class="room-hotspot" data-object="2F_PAPERS">
+                <polygon points="340,420 455,275 635,275 760,420" fill="#1c1917" stroke="#44403c" stroke-width="3"/>
+                <rect x="475" y="312" width="145" height="38" rx="3" fill="#cbd5e1" stroke="#64748b" stroke-width="2"/>
+                <rect x="492" y="306" width="26" height="20" fill="#facc15"/>
+                <rect x="558" y="308" width="26" height="20" fill="#38bdf8"/>
+              </g>
+            </svg>
+          `;
+
+        case '3F_DEPT':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="420" fill="#050912"/>
+              <rect y="420" width="1000" height="142" fill="#090c14"/>
+              <!-- 우측 상단 빈 벽면 X 자국 (모기 시체) -->
+              <g class="room-hotspot" data-object="3F_MOSQUITO">
+                <rect x="825" y="80" width="70" height="70" fill="transparent"/>
+                <text x="860" y="122" text-anchor="middle" fill="#475569" font-size="16" font-weight="bold">X</text>
+              </g>
+              <!-- 벽면 메모 (함정 숫자 4) -->
+              <g class="room-hotspot" data-object="3F_WALL_MEMO">
+                <rect x="135" y="110" width="165" height="135" rx="4" fill="#27150c" stroke="#451a03" stroke-width="4"/>
+                <rect x="165" y="135" width="68" height="68" fill="#fef08a" opacity="0.85"/>
+                <text x="199" y="178" text-anchor="middle" fill="#1e293b" font-size="22" font-weight="black">4</text>
+              </g>
+              <!-- 과방 테이블 & 선배의 노트북 (유튜브 시청 중) -->
+              <g class="room-hotspot" data-object="3F_LAPTOP">
+                <rect x="365" y="300" width="415" height="22" fill="#27150c"/>
+                <rect x="395" y="322" width="22" height="98" fill="#1e293b"/>
+                <rect x="725" y="322" width="22" height="98" fill="#1e293b"/>
+                <polygon points="485,212 625,212 635,295 475,295" fill="#0f172a" stroke="#38bdf8" stroke-width="2"/>
+                <rect x="494" y="220" width="122" height="64" fill="#020617"/>
+                <polygon points="548,242 548,262 566,252" fill="#ef4444"/>
+                <rect x="462" y="295" width="186" height="7" fill="#475569"/>
+              </g>
+            </svg>
+          `;
+
+        case '4F_OFFICE':
+          // PDF Page 10 '4층 - 교수 연구실' 어두운 연구실 내부 + 8종 조사 오브젝트
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="420" fill="#04070f"/>
+              <rect y="420" width="1000" height="142" fill="#070b14"/>
+              <!-- 1. 캐비닛 -->
+              <g class="room-hotspot" data-object="4F_CABINET">
+                <rect x="55" y="115" width="120" height="305" rx="3" fill="#0f172a" stroke="#334155" stroke-width="3"/>
+                <line x1="55" y1="265" x2="175" y2="265" stroke="#020617" stroke-width="3"/>
+              </g>
+              <!-- 2. 개인 락커 -->
+              <g class="room-hotspot" data-object="4F_LOCKER">
+                <rect x="190" y="140" width="92" height="280" rx="3" fill="#0b1120" stroke="#334155" stroke-width="3"/>
+                <circle cx="266" cy="280" r="4" fill="#f59e0b"/>
+              </g>
+              <!-- 3. 책상 -->
+              <g class="room-hotspot" data-object="4F_DESK">
+                <rect x="330" y="285" width="325" height="20" fill="#27150c" stroke="#451a03" stroke-width="2"/>
+                <rect x="445" y="195" width="105" height="68" rx="3" fill="#020617" stroke="#38bdf8" stroke-width="2"/>
+                <rect x="490" y="263" width="16" height="22" fill="#1e293b"/>
+              </g>
+              <!-- 4. 책상 서랍 (진짜 시험지 위치) -->
+              <g class="room-hotspot" data-object="4F_DRAWER">
+                <rect x="345" y="305" width="95" height="115" fill="#1c0f08" stroke="#451a03" stroke-width="2"/>
+                <rect x="545" y="305" width="98" height="115" fill="#1c0f08" stroke="#78350f" stroke-width="2"/>
+                <line x1="545" y1="343" x2="643" y2="343" stroke="#451a03" stroke-width="2"/>
+                <line x1="545" y1="381" x2="643" y2="381" stroke="#451a03" stroke-width="2"/>
+                <circle cx="594" cy="324" r="3.5" fill="#94a3b8"/>
+                <circle cx="594" cy="362" r="3.5" fill="#94a3b8"/>
+                <circle cx="594" cy="400" r="3.5" fill="#94a3b8"/>
+              </g>
+              <!-- 5. 서류 더미 (작년 시험지 함정) -->
+              <g class="room-hotspot" data-object="4F_DOCS">
+                <rect x="350" y="258" width="76" height="27" rx="2" fill="#94a3b8" stroke="#475569" stroke-width="2"/>
+              </g>
+              <!-- 6. 책장 -->
+              <g class="room-hotspot" data-object="4F_BOOKSHELF">
+                <rect x="755" y="105" width="185" height="315" rx="3" fill="#1c0f08" stroke="#451a03" stroke-width="3"/>
+                <line x1="755" y1="185" x2="940" y2="185" stroke="#451a03" stroke-width="3"/>
+                <line x1="755" y1="265" x2="940" y2="265" stroke="#451a03" stroke-width="3"/>
+                <line x1="755" y1="345" x2="940" y2="345" stroke="#451a03" stroke-width="3"/>
+                <rect x="772" y="125" width="18" height="60" fill="#7f1d1d"/>
+                <rect x="795" y="130" width="22" height="55" fill="#1e3a8a"/>
+                <rect x="822" y="122" width="16" height="63" fill="#064e3b"/>
+              </g>
+              <!-- 7. 휴지통 -->
+              <g class="room-hotspot" data-object="4F_TRASH">
+                <polygon points="675,355 725,355 718,420 682,420" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+              </g>
+              <!-- 8. 바닥 -->
+              <g class="room-hotspot" data-object="4F_FLOOR">
+                <rect x="360" y="432" width="280" height="75" rx="6" fill="#0b111e" stroke="#1e293b" stroke-width="2" stroke-dasharray="6 4"/>
+              </g>
+            </svg>
+          `;
+      }
+      return '';
+    }
+
+    function renderZoomSVG(objectId) {
+      switch (objectId) {
+        case '1F_CHALKBOARD':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="562" fill="#03070a"/>
+              <rect x="115" y="55" width="770" height="405" rx="10" fill="#0b1f18" stroke="#3f2312" stroke-width="12"/>
+              <text x="500" y="175" text-anchor="middle" fill="#e2e8f0" font-size="36" font-weight="bold">지각 : 이민호랑나비</text>
+              <rect x="640" y="280" width="180" height="120" rx="4" fill="#fef08a" transform="rotate(-3 730 340)"/>
+              <text x="730" y="330" text-anchor="middle" fill="#713f12" font-size="15" font-weight="bold">첫 번째 숫자</text>
+              <text x="730" y="378" text-anchor="middle" fill="#b91c1c" font-size="34" font-weight="black">[ 1 _ _ _ ]</text>
+            </svg>
+          `;
+        case '1F_VENDING':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="562" fill="#03060c"/>
+              <rect x="270" y="40" width="460" height="475" rx="12" fill="#0f294a" stroke="#38bdf8" stroke-width="5"/>
+              <rect x="310" y="75" width="380" height="230" rx="8" fill="#06101e" stroke="#7dd3fc" stroke-width="2"/>
+              <rect x="360" y="115" width="70" height="105" rx="6" fill="#d97706"/>
+              <text x="395" y="174" text-anchor="middle" fill="#020617" font-size="15" font-weight="black">캔커피</text>
+              <rect x="465" y="115" width="70" height="105" rx="6" fill="#0284c7"/>
+              <text x="500" y="174" text-anchor="middle" fill="#020617" font-size="14" font-weight="black">이온음료</text>
+              <rect x="570" y="115" width="70" height="105" rx="6" fill="#7f1d1d"/>
+              <text x="605" y="174" text-anchor="middle" fill="#fecaca" font-size="15" font-weight="black">품절</text>
+            </svg>
+          `;
+        case '1F_MIRROR':
+        case '2F_MIRROR':
+        case '3F_MIRROR':
+        case '4F_MIRROR':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="562" fill="#03070e"/>
+              <rect x="250" y="45" width="500" height="385" rx="12" fill="#0c1e33" stroke="#475569" stroke-width="8"/>
+              <circle cx="500" cy="215" r="76" fill="#1e293b"/>
+              <path d="M375,420 Q500,305 625,420" fill="#1e293b"/>
+              <circle cx="472" cy="205" r="7" fill="#64748b"/>
+              <circle cx="528" cy="205" r="7" fill="#64748b"/>
+              <path d="M476,248 Q500,234 524,248" stroke="#64748b" stroke-width="4" fill="none"/>
+            </svg>
+          `;
+        case '1F_STALL':
+        case '2F_STALL':
+        case '3F_STALL':
+        case '4F_STALL':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="562" fill="#03060c"/>
+              <rect x="275" y="45" width="450" height="445" rx="8" fill="#162033" stroke="#334155" stroke-width="5"/>
+              <ellipse cx="500" cy="335" rx="92" ry="52" fill="#94a3b8"/>
+              <rect x="428" y="185" width="144" height="120" rx="8" fill="#64748b"/>
+              ${objectId === '3F_STALL' ? `<rect x="492" y="308" width="16" height="36" rx="2" fill="#facc15" transform="rotate(18 500 326)"/>` : ''}
+            </svg>
+          `;
+        case '2F_PAPERS':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="562" fill="#060911"/>
+              <rect x="195" y="75" width="285" height="355" rx="4" fill="#cbd5e1" stroke="#475569" stroke-width="4" transform="rotate(-4 337 252)"/>
+              <text x="335" y="145" text-anchor="middle" fill="#991b1b" font-size="24" font-weight="black">학회 블랙리스트</text>
+              <rect x="540" y="85" width="215" height="160" rx="4" fill="#fef08a" transform="rotate(3 647 165)"/>
+              <text x="647" y="172" text-anchor="middle" fill="#713f12" font-size="22" font-weight="black">노란 포스트잇</text>
+              <rect x="548" y="275" width="215" height="160" rx="4" fill="#7dd3fc" transform="rotate(-2 655 355)"/>
+              <text x="655" y="362" text-anchor="middle" fill="#0c4a6e" font-size="22" font-weight="black">파란 포스트잇</text>
+            </svg>
+          `;
+        case '3F_LAPTOP':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="562" fill="#03060c"/>
+              <rect x="175" y="55" width="650" height="385" rx="12" fill="#0f172a" stroke="#38bdf8" stroke-width="4"/>
+              <rect x="200" y="80" width="600" height="335" rx="4" fill="#020617"/>
+              <rect x="225" y="95" width="110" height="28" rx="4" fill="#dc2626"/>
+              <text x="280" y="114" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="black">▶ YouTube</text>
+              <rect x="225" y="138" width="550" height="210" rx="6" fill="#1e293b"/>
+              <circle cx="500" cy="243" r="40" fill="#ef4444"/>
+              <polygon points="488,225 488,261 520,243" fill="#ffffff"/>
+              <text x="500" y="382" text-anchor="middle" fill="#cbd5e1" font-size="17" font-weight="bold">새벽에 보면 웃참 실패하는 영상 모음ㅋㅋ</text>
+            </svg>
+          `;
+        case '3F_MOSQUITO':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="562" fill="#04070e"/>
+              <circle cx="500" cy="240" r="140" fill="#0f172a" stroke="#334155" stroke-width="4"/>
+              <text x="500" y="255" text-anchor="middle" fill="#64748b" font-size="44" font-weight="black">X</text>
+            </svg>
+          `;
+        case '4F_WALLET':
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="562" fill="#03070e"/>
+              <rect x="275" y="105" width="450" height="305" rx="14" fill="#451a03" stroke="#f59e0b" stroke-width="4"/>
+              <rect x="320" y="145" width="360" height="225" rx="8" fill="#fef3c7"/>
+              <text x="500" y="205" text-anchor="middle" fill="#78350f" font-size="21" font-weight="black">교수 신분증 &amp; 메모</text>
+              <text x="500" y="275" text-anchor="middle" fill="#b91c1c" font-size="40" font-weight="black">[ _ _ _ 4 ]</text>
+            </svg>
+          `;
+        case '4F_DRAWER':
+          // PDF Page 10 '시험지 발견' 서랍 확대 뷰
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="562" fill="#03060c"/>
+              <polygon points="240,120 760,120 820,440 180,440" fill="#27150c" stroke="#78350f" stroke-width="6"/>
+              <rect x="315" y="165" width="370" height="235" rx="4" fill="#e2e8f0" stroke="#94a3b8" stroke-width="3"/>
+              <text x="500" y="235" text-anchor="middle" fill="#0f172a" font-size="22" font-weight="black">2026학년도 전공 중간고사 시험지</text>
+              <text x="500" y="275" text-anchor="middle" fill="#dc2626" font-size="16" font-weight="bold">[ 대외비 · 유출 엄금 ]</text>
+            </svg>
+          `;
+        default:
+          return `
+            <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+              <rect width="1000" height="562" fill="#04070f"/>
+              <rect x="240" y="85" width="520" height="345" rx="12" fill="#0f172a" stroke="#334155" stroke-width="3"/>
+              <text x="500" y="255" text-anchor="middle" fill="#cbd5e1" font-size="24" font-weight="bold">오브젝트 상세 조사</text>
+            </svg>
+          `;
+      }
+    }
+
+    // PDF Page 4 & 9 선배 / 교수님 캐릭터 일러스트
+    function renderSeniorSVG() {
+      return `
+        <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+          <rect width="1000" height="562" fill="#04070e"/>
+          <path d="M320,562 Q500,340 680,562" fill="#1e293b"/>
+          <circle cx="500" cy="260" r="85" fill="#cbd5e1"/>
+          <path d="M412,255 Q420,155 500,155 Q580,155 588,255 L565,215 L525,235 L495,210 L460,235 L430,215 Z" fill="#090d16"/>
+          <circle cx="468" cy="252" r="6" fill="#090d16"/>
+          <circle cx="532" cy="252" r="6" fill="#090d16"/>
+          <line x1="452" y1="236" x2="484" y2="244" stroke="#090d16" stroke-width="4"/>
+          <line x1="548" y1="236" x2="516" y2="244" stroke="#090d16" stroke-width="4"/>
+          <path d="M480,305 Q500,295 520,305" stroke="#090d16" stroke-width="4" fill="none"/>
+        </svg>
+      `;
+    }
+
+    function renderProfessorSVG(blush = false) {
+      // PDF Page 4 & 9 붉은 복도 조명 속 거대한 실루엣 + 빛나는 안경 + 3번 선택 시 볼 발그레
+      return `
+        <svg viewBox="0 0 1000 562" preserveAspectRatio="none" class="w-full h-full">
+          <rect width="1000" height="562" fill="${blush ? '#090d18' : '#140406'}"/>
+          <!-- 붉은 경고 조명 -->
+          <rect x="420" y="95" width="160" height="10" rx="4" fill="${blush ? '#38bdf8' : '#ef4444'}" opacity="0.75"/>
+          <!-- 거대한 정장 실루엣 -->
+          <path d="M230,562 L270,355 L440,325 L560,325 L730,355 L770,562 Z" fill="#070a10" stroke="#1e293b" stroke-width="2"/>
+          <polygon points="468,325 532,325 500,435" fill="#cbd5e1"/>
+          <polygon points="492,330 508,330 500,430" fill="#090d16"/>
+          <!-- 각진 얼굴 -->
+          <polygon points="442,185 558,185 548,308 500,328 452,308" fill="#a17a66"/>
+          <path d="M440,195 Q500,152 560,195 L555,172 L445,172 Z" fill="#090d16"/>
+          <!-- 빛나는 안경 -->
+          <rect x="454" y="224" width="38" height="20" rx="2" fill="#f8fafc" stroke="#090d16" stroke-width="3"/>
+          <rect x="508" y="224" width="38" height="20" rx="2" fill="#f8fafc" stroke="#090d16" stroke-width="3"/>
+          <line x1="492" y1="234" x2="508" y2="234" stroke="#090d16" stroke-width="3"/>
+
+          ${blush ? `
+            <!-- 3번 선택지 정답 시 발그레한 볼과 온화한 미소 -->
+            <ellipse cx="462" cy="264" rx="15" ry="8" fill="#fb7185" opacity="0.8"/>
+            <ellipse cx="538" cy="264" rx="15" ry="8" fill="#fb7185" opacity="0.8"/>
+            <path d="M480,285 Q500,305 520,285" stroke="#4c0519" stroke-width="4" fill="none"/>
+          ` : `
+            <line x1="478" y1="292" x2="522" y2="292" stroke="#090d16" stroke-width="4"/>
+          `}
+        </svg>
+      `;
+    }
+
+    function renderGuardSVG() {
+      return `
+        <svg viewBox="0 0 260 260" class="w-full h-full">
+          <rect width="260" height="260" rx="14" fill="#180507"/>
+          <path d="M45,260 Q130,175 215,260" fill="#1e293b"/>
+          <circle cx="130" cy="120" r="46" fill="#9ca3af"/>
+          <path d="M84,96 L176,96 L166,70 L94,70 Z" fill="#0f172a"/>
+          <circle cx="112" cy="116" r="13" fill="#ffffff"/>
+          <circle cx="148" cy="116" r="13" fill="#ffffff"/>
+          <!-- 손전등 빛 -->
+          <circle cx="65" cy="185" r="24" fill="#fef08a"/>
+          <polygon points="65,185 0,115 0,255" fill="#fef08a" opacity="0.35"/>
+        </svg>
+      `;
+    }
+
+    /*************************************************************************
+     * 5. 하단 대화창 & 선택지 제어
+     *************************************************************************/
+    const dialogueBox = document.getElementById('dialogue-box');
+    const dialogueMainPanel = document.getElementById('dialogue-main-panel');
+    const dialogueSpeaker = document.getElementById('dialogue-speaker');
+    const dialogueText = document.getElementById('dialogue-text');
+    const dialogueChoices = document.getElementById('dialogue-choices');
+    const dialogueHint = document.getElementById('dialogue-hint');
+
+    function showDialogue(speaker, text, choices = null, onClickContinue = null) {
+      dialogueBox.classList.remove('hidden');
+      dialogueSpeaker.textContent = speaker;
+      dialogueText.textContent = text;
+      state.dialogueCallback = onClickContinue;
+
+      if (choices && choices.length > 0) {
+        dialogueChoices.innerHTML = '';
+        dialogueChoices.classList.remove('hidden');
+        dialogueHint.classList.add('hidden');
+        choices.forEach(c => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'w-full text-left px-3 py-2 rounded bg-slate-900/95 hover:bg-sky-500/20 border border-slate-700 hover:border-sky-400 text-xs sm:text-sm text-slate-200 font-bold transition';
+          btn.textContent = c.label;
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            SoundFX.click();
+            c.action();
+          });
+          dialogueChoices.appendChild(btn);
+        });
+      } else {
+        dialogueChoices.classList.add('hidden');
+        dialogueChoices.innerHTML = '';
+        if (onClickContinue) {
+          dialogueHint.classList.remove('hidden');
+        } else {
+          dialogueHint.classList.add('hidden');
+        }
+      }
+    }
+
+    function hideDialogue() {
+      dialogueBox.classList.add('hidden');
+      dialogueChoices.classList.add('hidden');
+      dialogueHint.classList.add('hidden');
+      state.dialogueCallback = null;
+    }
+
+    dialogueMainPanel.addEventListener('click', () => {
+      if (state.dialogueCallback) {
+        SoundFX.click();
+        const cb = state.dialogueCallback;
+        state.dialogueCallback = null;
+        cb();
+      }
+    });
+
+    /*************************************************************************
+     * 6. 복도 탐색 · 계단 전환 · 방 내부 사물 직접 클릭·확대 조사 로직
+     *************************************************************************/
+    const sceneCanvas = document.getElementById('scene-canvas');
+    const corridorPinsLayer = document.getElementById('corridor-pins-layer');
+    const btnZoomBack = document.getElementById('btn-zoom-back');
+    const btnExitRoom = document.getElementById('btn-exit-room');
+    const hudLocation = document.getElementById('hud-location');
+
+    function updateHUD() {
+      if (!state.started) {
+        hudLocation.textContent = '한성관 정문 앞';
+        return;
+      }
+      if (state.view === 'corridor') {
+        hudLocation.textContent = CORRIDOR_DATA[state.floor].hud;
+      } else {
+        hudLocation.textContent = ROOM_HUD_NAMES[state.roomId] || '';
+      }
+    }
+
+    // 계단 이동: 650ms 느린 검은색 암전 전환 후 층 이동
+    function moveFloorWithFade(targetFloor) {
+      const overlay = document.getElementById('stair-fade-overlay');
+      SoundFX.footsteps();
+      hideDialogue();
+      overlay.style.opacity = '1';
+
+      setTimeout(() => {
+        state.floor = targetFloor;
+        state.view = 'corridor';
+        state.roomId = null;
+        state.zoomObjectId = null;
+
+        if (targetFloor === 4 && !state.metProf4F) {
+          renderProfessorEncounter();
+        } else {
+          renderCorridor();
+        }
+
+        requestAnimationFrame(() => {
+          overlay.style.opacity = '0';
+        });
+      }, 650);
+    }
+
+    // 기획서 와이어프레임 복도 화면 렌더링
+    function renderCorridor() {
+      state.view = 'corridor';
+      state.roomId = null;
+      state.zoomObjectId = null;
+
+      btnZoomBack.classList.add('hidden');
+      btnExitRoom.classList.add('hidden');
+      updateHUD();
+
+      sceneCanvas.innerHTML = renderCorridorSVG(state.floor);
+      corridorPinsLayer.innerHTML = '';
+      corridorPinsLayer.classList.remove('hidden');
+
+      const pins = CORRIDOR_DATA[state.floor].pins;
+      pins.forEach(pin => {
+        const wrapper = document.createElement('button');
+        wrapper.type = 'button';
+        wrapper.style.left = `${pin.x}%`;
+        wrapper.style.top = `${pin.y}%`;
+        wrapper.className = `wf-pin pointer-events-auto flex flex-col items-center ${pin.id === '4F_OFFICE' ? 'wf-pin-office' : ''}`;
+
+        const isStair = pin.type === 'stair';
+        wrapper.innerHTML = `
+          <div class="wf-pin-box px-2.5 py-1 sm:px-3 sm:py-1.5 rounded flex items-center gap-1.5 text-[11px] sm:text-xs font-bold ${isStair ? 'text-amber-300' : 'text-slate-100'}">
+            <span>${pin.label}</span>
+            <span class="text-slate-500">›</span>
+          </div>
+          <div class="w-px h-3 sm:h-4 ${isStair ? 'bg-amber-400/60' : 'bg-sky-400/60'}"></div>
+          <div class="w-2.5 h-2.5 rounded-full ${isStair ? 'bg-amber-400 shadow-[0_0_8px_#fbbf24]' : 'bg-sky-400 shadow-[0_0_8px_#38bdf8]'}"></div>
+        `;
+
+        wrapper.addEventListener('click', () => {
+          if (isStair) moveFloorWithFade(pin.targetFloor);
+          else enterRoom(pin.id);
+        });
+        corridorPinsLayer.appendChild(wrapper);
+      });
+
+      // 와이어프레임 하단 안내 문구
+      showDialogue(`${state.floor}층 복도`, '들어갈 장소를 골라주세요.');
+    }
+
+    function enterRoom(roomId) {
+      SoundFX.door();
+      hideDialogue();
+
+      if (roomId === '4F_OFFICE' && !state.doorlockUnlocked) {
+        openDoorlockModal();
+        return;
+      }
+      renderRoom(roomId);
+    }
+
+    function renderRoom(roomId) {
+      state.view = 'room';
+      state.roomId = roomId;
+      state.zoomObjectId = null;
+
+      corridorPinsLayer.classList.add('hidden');
+      btnZoomBack.classList.add('hidden');
+      btnExitRoom.classList.toggle('hidden', roomId === '4F_OFFICE');
+      updateHUD();
+
+      sceneCanvas.innerHTML = renderRoomSVG(roomId);
+      sceneCanvas.querySelectorAll('.room-hotspot').forEach(el => {
+        el.addEventListener('click', () => {
+          const objId = el.getAttribute('data-object');
+          handleObjectClick(objId);
+        });
+      });
+
+      // 방 첫 진입 시 기본 분위기 텍스트
+      const introTexts = {
+        '1F_CLASS': '어두운 101호 강의실이다. 칠판과 교탁이 보인다.',
+        '1F_LOUNGE': '적막한 휴게실이다. 푸른빛이 새어 나오는 음료 자판기가 서 있다.',
+        '1F_TOILET': '1층 화장실이다. 세면대 거울과 화장실 칸이 있다.',
+        '2F_CLASS': '201호 강의실이다. 칠판과 뒤쪽 게시판이 보인다.',
+        '2F_CLUB': '책상 위에 서류더미가 놓여있다.',
+        '2F_TOILET': '2층 화장실이다. 물방울 떨어지는 소리만 들린다.',
+        '3F_CLASS': '301호 강의실이다. 고요한 어둠이 깔려 있다.',
+        '3F_DEPT': '3층 과방이다. 한쪽에 늦게까지 남아 있는 선배의 노트북 불빛이 보인다.',
+        '3F_TOILET': '3층 화장실이다.',
+        '4F_OFFICE': '책상 위에 서류들이 놓여있다.',
+        '4F_TOILET': '4층 화장실이다. 바닥에 무언가 떨어져 있다.'
+      };
+      if (introTexts[roomId]) {
+        showDialogue(ROOM_HUD_NAMES[roomId], introTexts[roomId]);
+      }
+
+      // 3층 과방 진입 시 선배 이벤트 미통과 상태면 즉시 선배 심문 발생
+      if (roomId === '3F_DEPT' && !state.metSenior) {
+        renderSeniorEncounter();
+      }
+    }
+
+    function handleObjectClick(objectId) {
+      SoundFX.click();
+      state.view = 'zoom';
+      state.zoomObjectId = objectId;
+
+      btnExitRoom.classList.add('hidden');
+      btnZoomBack.classList.remove('hidden');
+      sceneCanvas.innerHTML = renderZoomSVG(objectId);
+
+      switch (objectId) {
+        // 1층 강의실
+        case '1F_CHALKBOARD':
+          showDialogue('칠판 확대', '칠판 구석에 희미한 분필 글씨가 적혀 있다.\n첫 번째 비밀번호 단서 : [ 1 _ _ _ ]');
+          break;
+        case '1F_PODIUM':
+          showDialogue('교탁', '출석부와 분필만 놓여 있다.');
+          break;
+
+        // 1층 휴게실
+        case '1F_VENDING':
+          showDialogue('음료 자판기', '어떤 음료를 뽑아볼까?', [
+            { label: '캔커피', action: () => showDialogue('음료 자판기', '동전 먹었네 하…') },
+            { label: '이온음료', action: () => showDialogue('음료 자판기', '동전 먹었네 하…') },
+            { label: '안 마심', action: () => showDialogue('나', '괜히 동전만 날릴 것 같다.') }
+          ]);
+          break;
+        case '1F_SOFA':
+          showDialogue('소파', '아무것도 떨어져 있지 않다.');
+          break;
+
+        // 1층 화장실
+        case '1F_MIRROR':
+          showDialogue('거울', '어우… 너무 못생겼다...');
+          break;
+        case '1F_STALL':
+          showDialogue('화장실 칸', '으악! 누가 물 안 내렸냐…');
+          break;
+
+        // 2층 강의실
+        case '2F_CHALKBOARD':
+          showDialogue('칠판', '201호 중간고사 자리 배치 안내만 적혀 있다.');
+          break;
+        case '2F_BOARD':
+          showDialogue('게시판', '동아리 모집 포스터뿐이다. 비밀번호 단서는 없다.');
+          break;
+
+        // 2층 학회실
+        case '2F_PAPERS':
+          showDialogue('서류더미', '서류더미 사이에 여러 메모가 끼어 있다. 무엇을 볼까?', [
+            {
+              label: '노란 포스트잇',
+              action: () => showDialogue('노란 포스트잇', '연구실 도어락 두 번째 자리 메모다!\n두 번째 진짜 단서 : [ _ 0 _ _ ]')
+            },
+            {
+              label: '블랙리스트',
+              action: () => showDialogue('블랙리스트', '3학년 허홍석 << 꼴통')
+            },
+            {
+              label: '파란 포스트잇',
+              action: () => showDialogue('파란 포스트잇', '단서인데 [_2__]')
+            }
+          ]);
+          break;
+
+        // 2층 화장실
+        case '2F_MIRROR':
+          showDialogue('거울', '와 진짜 너무 못생겼다.');
+          break;
+        case '2F_STALL':
+          showDialogue('화장실 칸', '비어 있는 칸이다.');
+          break;
+
+        // 3층 강의실
+        case '3F_CHALKBOARD':
+          showDialogue('칠판', '깨끗하게 지워져 있다.');
+          break;
+        case '3F_CLASS_DESK':
+          showDialogue('책상', '누군가 엎드려 자던 흔적만 남아 있다.');
+          break;
+
+        // 3층 과방
+        case '3F_MOSQUITO':
+          showDialogue('벽면 자국', '모기 시체였네..');
+          break;
+        case '3F_LAPTOP':
+          showDialogue('선배의 노트북', '이 선배, 과제 안 하고 딴 짓 하고있네ㅋㅋ');
+          break;
+        case '3F_WALL_MEMO':
+          showDialogue('과방 메모', '사물함 번호 메모 같다. 숫자 "4"가 적혀 있다.');
+          break;
+
+        // 3층 화장실
+        case '3F_MIRROR':
+          showDialogue('거울', '근데 이 정도면 괜찮은 편 아닌가?');
+          break;
+        case '3F_STALL':
+          showDialogue('화장실 칸', '제발 물 좀 내려라… 어… 근데 똥에 뭔가 꼽혀있다.', [
+            {
+              label: '뽑는다',
+              action: () => showDialogue('방수 코팅 메모', '코팅된 쪽지를 뽑아 확인했다!\n세 번째 진짜 단서 : [ _ _ 0 _ ]')
+            },
+            {
+              label: '놔둔다',
+              action: () => showDialogue('나', '차마 손을 뻗을 수가 없다…')
+            }
+          ]);
+          break;
+
+        // 4층 화장실
+        case '4F_MIRROR':
+          showDialogue('거울', '식은땀이 흐르는 내 얼굴이 비친다.');
+          break;
+        case '4F_STALL':
+          showDialogue('화장실 칸', '아무도 없다.');
+          break;
+        case '4F_WALLET':
+          showDialogue('교수님 지갑이다.', '지갑 안쪽 메모지에 마지막 번호가 적혀 있다!\n네 번째 진짜 단서 : [ _ _ _ 4 ]');
+          break;
+
+        // 4층 교수 연구실 8종 사물
+        case '4F_DRAWER':
+          showDialogue('책상 서랍', '시험지를 찾았다!', [
+            { label: '시험지를 챙겨 탈출한다', action: () => triggerEnding('A_CLEAR') },
+            { label: '서랍을 닫는다', action: () => showDialogue('나', '지금 망설일 시간이 없다!') }
+          ]);
+          break;
+        case '4F_DOCS':
+          showDialogue('서류 더미', '시험지 묶음이 놓여 있다. 가져갈까?', [
+            { label: '챙겨서 탈출한다', action: () => triggerEnding('F_WRONG_PAPER') },
+            { label: '내려놓는다', action: () => showDialogue('나', '잠깐, 표지를 보니 작년 날짜가 적혀 있다!') }
+          ]);
+          break;
+        case '4F_DESK':
+          showDialogue('책상', '교수님이 두고 가신 휴대폰 화면이 01:42를 가리키고 있다.');
+          break;
+        case '4F_CABINET':
+          showDialogue('캐비닛', '잠겨 있어서 열리지 않는다.');
+          break;
+        case '4F_LOCKER':
+          showDialogue('개인 락커', '비어 있는 개인 락커다.');
+          break;
+        case '4F_BOOKSHELF':
+          showDialogue('책장', '전공 서적들만 꽂혀 있다.');
+          break;
+        case '4F_TRASH':
+          showDialogue('휴지통', '세단된 종이 조각뿐이다.');
+          break;
+        case '4F_FLOOR':
+          showDialogue('바닥', '바닥에는 아무것도 떨어져 있지 않다.');
+          break;
+      }
+    }
+
+    btnZoomBack.addEventListener('click', () => {
+      SoundFX.click();
+      hideDialogue();
+      if (state.roomId) renderRoom(state.roomId);
+    });
+
+    btnExitRoom.addEventListener('click', () => {
+      SoundFX.door();
+      hideDialogue();
+      renderCorridor();
+    });
+
+    /*************************************************************************
+     * 7. 3층 선배 & 4층 교수님 위기 대화 이벤트 (기획서 PDF Page 9 그대로 구현)
+     *************************************************************************/
+    function renderSeniorEncounter() {
+      SoundFX.horrorShock();
+      btnExitRoom.classList.add('hidden');
+      btnZoomBack.classList.add('hidden');
+      sceneCanvas.innerHTML = renderSeniorSVG();
+
+      showDialogue('선배', '이 시간에 너가 무슨 일이야?\n너 공부 안 하잖아?', [
+        {
+          label: '1. 무슨 소리세요... 저 공부하러 왔습니다.',
+          action: () => triggerEnding('F_SENIOR')
+        },
+        {
+          label: '2. 아 뭐 좀 두고 가서요.',
+          action: () => {
+            state.metSenior = true;
+            showDialogue('선배', '그래? 얼른 챙겨서 나가라. 나도 곧 들어갈 거니까.', null, () => {
+              hideDialogue();
+              renderRoom('3F_DEPT');
+            });
+          }
+        },
+        {
+          label: '3. 선배님 보고싶어서 왔죠.',
+          action: () => triggerEnding('F_SENIOR')
+        }
+      ]);
+    }
+
+    function renderProfessorEncounter() {
+      SoundFX.horrorShock();
+      corridorPinsLayer.classList.add('hidden');
+      btnExitRoom.classList.add('hidden');
+      btnZoomBack.classList.add('hidden');
+      hudLocation.textContent = '4층 복도';
+      sceneCanvas.innerHTML = renderProfessorSVG(false);
+
+      showDialogue('교수님', '이 시간에 연구실 층에서 뭐하는거지 학생.\n기말고사 기간일텐데.', [
+        {
+          label: '1. 화장실 가려고요.',
+          action: () => triggerEnding('F_PROFESSOR')
+        },
+        {
+          label: '2. 뭐 좀 두고 간 게 있어서요.',
+          action: () => triggerEnding('F_PROFESSOR')
+        },
+        {
+          label: '3. 교수님 보고싶어서 왔죠!',
+          action: () => {
+            state.metProf4F = true;
+            SoundFX.success();
+            sceneCanvas.innerHTML = renderProfessorSVG(true);
+            showDialogue('교수님', '흐잉.. 그렇게 말해줘서 고맙네ㅎ', null, () => {
+              hideDialogue();
+              renderCorridor();
+            });
+          }
+        }
+      ]);
+    }
+
+    /*************************************************************************
+     * 8. 교수 연구실 도어락(1004, 5회 제한) & 45초 타임어택
+     *************************************************************************/
+    const modalDoorlock = document.getElementById('modal-doorlock');
+    const doorlockDisplay = document.getElementById('doorlock-display');
+    const doorlockMsg = document.getElementById('doorlock-msg');
+    const doorlockAttempts = document.getElementById('doorlock-attempts');
+
+    function openDoorlockModal() {
+      state.doorlockInput = '';
+      updateDoorlockUI('비밀번호 4자리 입력');
+      modalDoorlock.classList.remove('hidden');
+    }
+
+    function updateDoorlockUI(msg, err = false) {
+      const chars = state.doorlockInput.split('');
+      while (chars.length < 4) chars.push('*');
+      doorlockDisplay.textContent = chars.join(' ');
+      doorlockAttempts.textContent = `${state.doorlockTriesLeft} / 5`;
+      doorlockMsg.textContent = msg;
+      doorlockMsg.className = `text-[11px] mt-1 h-4 ${err ? 'text-red-400 font-bold' : 'text-slate-400'}`;
+    }
+
+    document.querySelectorAll('.keypad-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (state.doorlockInput.length >= 4) return;
+        SoundFX.click();
+        state.doorlockInput += btn.getAttribute('data-key');
+        updateDoorlockUI('비밀번호 4자리 입력');
+      });
+    });
+
+    document.getElementById('keypad-clear').addEventListener('click', () => {
+      SoundFX.click();
+      state.doorlockInput = state.doorlockInput.slice(0, -1);
+      updateDoorlockUI('비밀번호 4자리 입력');
+    });
+
+    document.getElementById('btn-close-doorlock').addEventListener('click', () => {
+      SoundFX.click();
+      modalDoorlock.classList.add('hidden');
+      renderCorridor();
+    });
+
+    document.getElementById('keypad-enter').addEventListener('click', () => {
+      if (state.doorlockInput.length < 4) {
+        SoundFX.beep(false);
+        updateDoorlockUI('4자리를 모두 입력하세요', true);
+        return;
+      }
+      if (state.doorlockInput === '1004') {
+        SoundFX.beep(true);
+        state.doorlockUnlocked = true;
+        modalDoorlock.classList.add('hidden');
+        startOfficeTimeAttack();
+      } else {
+        SoundFX.beep(false);
+        state.doorlockTriesLeft -= 1;
+        state.doorlockInput = '';
+        if (state.doorlockTriesLeft <= 0) {
+          modalDoorlock.classList.add('hidden');
+          triggerEnding('F_DOORLOCK');
+        } else {
+          updateDoorlockUI('비밀번호가 일치하지 않습니다', true);
+        }
+      }
+    });
+
+    function startOfficeTimeAttack() {
+      renderRoom('4F_OFFICE');
+      state.timerRunning = true;
+      state.timeLeft = 45;
+
+      const timerBox = document.getElementById('hud-timer-box');
+      const timerText = document.getElementById('hud-timer-text');
+      const stage = document.getElementById('game-stage');
+
+      timerBox.classList.remove('hidden');
+      timerBox.classList.add('flex');
+      stage.classList.add('timer-danger');
+      timerText.textContent = '00:45';
+
+      // PDF Page 10 '01:42 휴대폰 타임어택 안내' 연출
+      showDialogue(
+        '01:42',
+        '망했다... 교수님이 휴대폰을 두고 가셨다.\n교수님이 돌아오실 수도 있으니 빨리 찾아야해..!',
+        null,
+        () => showDialogue('4층 - 교수 연구실', '책상 위에 서류들이 놓여있다.')
+      );
+
+      clearInterval(state.timerInterval);
+      state.timerInterval = setInterval(() => {
+        if (!state.timerRunning) return;
+        state.timeLeft -= 1;
+        const sec = Math.max(0, state.timeLeft).toString().padStart(2, '0');
+        timerText.textContent = `00:${sec}`;
+        if (state.timeLeft <= 0) {
+          stopTimer();
+          triggerEnding('F_TIMEOUT');
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      state.timerRunning = false;
+      clearInterval(state.timerInterval);
+      const timerBox = document.getElementById('hud-timer-box');
+      const stage = document.getElementById('game-stage');
+      timerBox.classList.add('hidden');
+      timerBox.classList.remove('flex');
+      stage.classList.remove('timer-danger');
+    }
+
+    /*************************************************************************
+     * 9. 엔딩 화면 & 초기화
+     *************************************************************************/
+    function triggerEnding(endingId) {
+      stopTimer();
+      hideDialogue();
+      modalDoorlock.classList.add('hidden');
+      corridorPinsLayer.classList.add('hidden');
+      btnZoomBack.classList.add('hidden');
+      btnExitRoom.classList.add('hidden');
+
+      const meta = ENDINGS_META.find(e => e.id === endingId) || ENDINGS_META[1];
+      unlockEnding(meta.id);
+
+      const isA = meta.grade === 'A';
+      if (isA) SoundFX.success();
+      else SoundFX.horrorShock();
+
+      const gradeEl = document.getElementById('ending-grade-text');
+      const quoteEl = document.getElementById('ending-quote');
+      const portraitEl = document.getElementById('ending-portrait');
+
+      gradeEl.textContent = `등급 : ${meta.grade}`;
+      gradeEl.className = `text-3xl sm:text-5xl font-black mb-2 tracking-tight ${isA ? 'text-sky-400' : 'text-red-500'}`;
+      quoteEl.textContent = meta.quote;
+      quoteEl.className = `text-sm sm:text-lg font-bold mb-3 ${isA ? 'text-sky-200' : 'text-red-300'}`;
+      document.getElementById('ending-desc').textContent = meta.desc;
+
+      if (endingId === 'F_DOORLOCK') {
+        portraitEl.innerHTML = renderGuardSVG();
+      } else {
+        portraitEl.innerHTML = renderProfessorSVG(isA);
+      }
+
+      document.getElementById('screen-ending').classList.remove('hidden');
+    }
+
+    function resetGame(showTitle = true) {
+      stopTimer();
+      hideDialogue();
+      modalDoorlock.classList.add('hidden');
+      document.getElementById('screen-ending').classList.add('hidden');
+
+      state.started = !showTitle;
+      state.floor = 1;
+      state.view = 'corridor';
+      state.roomId = null;
+      state.zoomObjectId = null;
+      state.metSenior = false;
+      state.metProf4F = false;
+      state.doorlockUnlocked = false;
+      state.doorlockInput = '';
+      state.doorlockTriesLeft = 5;
+      state.timeLeft = 45;
+
+      if (showTitle) {
+        document.getElementById('screen-title').classList.remove('hidden');
+        corridorPinsLayer.classList.add('hidden');
+        btnZoomBack.classList.add('hidden');
+        btnExitRoom.classList.add('hidden');
+        sceneCanvas.innerHTML = '';
+        updateHUD();
+      } else {
+        document.getElementById('screen-title').classList.add('hidden');
+        renderCorridor();
+      }
+    }
+
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+      SoundFX.click();
+      resetGame(false);
+    });
+    document.getElementById('hero-play-btn').addEventListener('click', () => {
+      if (!state.started) {
+        SoundFX.click();
+        resetGame(false);
+      }
+    });
+    document.getElementById('btn-open-rules').addEventListener('click', () => {
+      SoundFX.click();
+      document.getElementById('modal-rules').classList.remove('hidden');
+    });
+    document.getElementById('btn-close-rules').addEventListener('click', () => {
+      SoundFX.click();
+      document.getElementById('modal-rules').classList.add('hidden');
+    });
+    document.getElementById('btn-restart-top').addEventListener('click', () => {
+      SoundFX.click();
+      resetGame(true);
+    });
+    document.getElementById('btn-ending-retry').addEventListener('click', () => {
+      SoundFX.click();
+      resetGame(false);
+    });
+    document.getElementById('btn-sound-toggle').addEventListener('click', (e) => {
+      const on = SoundFX.toggle();
+      e.target.textContent = on ? 'SFX ON' : 'SFX OFF';
+      if (on) SoundFX.click();
+    });
+    document.getElementById('btn-reset-endings').addEventListener('click', () => {
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      renderEndingsGallery();
+    });
+
+    renderEndingsGallery();
+  </script>
+</body>
+</html>
